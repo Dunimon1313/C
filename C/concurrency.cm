@@ -1,0 +1,128 @@
+// written by Zachary Taylor. 
+
+// Variable Declarations. 
+
+//constants
+	
+const int Size = 8;
+const int Max = 15;
+
+
+//ints and arrays
+int buffer[Size];
+int a;
+int b;
+int c;
+int d;
+
+
+//semaphores
+semaphore full;
+semaphore mutex;
+semaphore empty;
+
+int in = 0; //index at which producer will put the next data
+int out = 0; // index from which the consumer will consume next data
+
+// Function Declarations. 
+
+void myStatement(){
+	//print info to system
+	cout << "Zachary Taylor" << endl;
+	cout << "Course CGS3763" << endl;
+	cout << "Spring 2022" << endl;
+	cout << "University of Central Florida" << endl;
+}//end statement
+
+
+void theProducer(int ProducerNumber){
+//itemProduced is used for output
+int crawler = 0;
+int itemProduced = 0;
+	
+	//entering the critical zone so this section locks the variables full, mutex, and empty
+	while (crawler < Max)
+	{
+		// locks empty and mutex
+		p(empty);
+		p(mutex);
+
+		//item is produced starting at 1
+		itemProduced = itemProduced + 1;
+		
+		//output produced is declared in system
+		cout << "Producer " << ProducerNumber <<" produced item "<< itemProduced << endl;
+
+		//item is loaded into buffer and index (in) is adjusted
+		buffer[in] = itemProduced;
+	        in = (in + 1) % Size;
+
+		//end condition incremented
+		crawler = crawler + 1;
+
+		//releases locks since all work is done for this iteration
+		v(mutex);
+		v(full);
+	}
+}//end producer
+
+
+void theConsumer(int ConsumerNumber){
+int item = 0;
+int crawler = 0;
+	//when work is done, in is > 0. thus, this loop will run until item out == in
+	while (crawler < Max){
+		p(full);
+		p(mutex);
+
+		//sets up current buffer item to be removed
+		item = buffer[out];
+		if(item > 0){
+			//items should not be 0 if an item was produced. So getting here means it is not 0,
+			//so the number to be consumed is printed to console
+			cout << "Consumer " << ConsumerNumber <<" consumed item " << item <<" from the buffer\n";
+			out = (out + 1) % Size;
+			crawler = crawler + 1;
+		}
+		v(mutex);
+		v(empty);
+	}
+	
+}//end consumer
+
+
+// Working area. 
+
+
+main()
+{
+	//initialize semaphores and producer-consumer pair variables. 
+	a = 1;
+	b = 2;
+	c = 3;
+	d = 4;
+	
+	//Call initialsem for full = Size, mutex = 1, and empty = 0. 
+
+	initialsem(full,Size);
+	initialsem(mutex,1);
+	initialsem(empty,0);
+
+
+	// Call myStatement. 
+
+	myStatement();
+
+
+	// Cobegin each producer-consumer pair. 
+		cobegin{
+			theProducer(a);
+			theConsumer(a);
+			theProducer(b);
+			theConsumer(b);
+			theProducer(c);
+			theConsumer(c);
+			theProducer(d);
+			theConsumer(d);
+		}
+}
